@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Return & Exchange Verification System</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Header -->
+        <header class="main-header">
+            <div class="logo-group">
+                <div class="logo-icon">🔄</div>
+                <div>
+                    <h1>Return & Exchange AI Verification</h1>
+                    <p class="subtitle">CLIP Product Matching + Fine-tuned YOLO Damage Detection</p>
+                </div>
+            </div>
+            <div class="status-badge" id="system-status">
+                <span class="status-dot"></span> System Active
+            </div>
+        </header>
+
+        <!-- Main Workspace Grid -->
+        <main class="dashboard-grid">
+            <!-- Left Panel: Input & Upload Form -->
+            <section class="panel input-panel">
+                <h2>1. Verification Parameters</h2>
+                
+                <!-- Category Selector -->
+                <div class="form-group">
+                    <label class="form-label">Product Category</label>
+                    <div class="category-selector">
+                        <label class="category-card active" id="cat-shoes">
+                            <input type="radio" name="category" value="shoes_clothes" checked>
+                            <span class="cat-icon">👟</span>
+                            <div class="cat-info">
+                                <strong>Shoes & Clothes</strong>
+                                <small>MVTec AD Leather Model</small>
+                            </div>
+                        </label>
+                        <label class="category-card" id="cat-electronics">
+                            <input type="radio" name="category" value="electronics_smartphones">
+                            <span class="cat-icon">📱</span>
+                            <div class="cat-info">
+                                <strong>Electronics & Smartphones</strong>
+                                <small>YOLO26n Screen Damage Model</small>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Image Dropzones -->
+                <div class="dropzone-grid">
+                    <!-- Reference Image -->
+                    <div class="dropzone-box" id="ref-dropzone">
+                        <label class="dropzone-label">
+                            <span class="upload-icon">📷</span>
+                            <strong>Original Reference Image</strong>
+                            <small>Product catalog photo</small>
+                            <input type="file" id="ref-file" accept="image/*" class="file-input">
+                        </label>
+                        <div class="image-preview" id="ref-preview" style="display:none;">
+                            <img id="ref-img-tag" src="" alt="Reference Preview">
+                            <button class="remove-btn" onclick="removeImage('ref')">&times;</button>
+                        </div>
+                    </div>
+
+                    <!-- Returned Image -->
+                    <div class="dropzone-box" id="ret-dropzone">
+                        <label class="dropzone-label">
+                            <span class="upload-icon">📦</span>
+                            <strong>Customer Returned Image</strong>
+                            <small>Photo uploaded by customer</small>
+                            <input type="file" id="ret-file" accept="image/*" class="file-input">
+                        </label>
+                        <div class="image-preview" id="ret-preview" style="display:none;">
+                            <img id="ret-img-tag" src="" alt="Returned Preview">
+                            <button class="remove-btn" onclick="removeImage('ret')">&times;</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Threshold Controls -->
+                <div class="form-group margin-top">
+                    <div class="slider-header">
+                        <label for="similarity-threshold" class="form-label">Product Match Threshold</label>
+                        <span id="threshold-val">75%</span>
+                    </div>
+                    <input type="range" id="similarity-threshold" min="50" max="95" value="75" class="slider">
+                </div>
+
+                <div class="form-group">
+                    <div class="slider-header">
+                        <label for="conf-threshold" class="form-label">Damage Detection Sensitivity (Conf Threshold)</label>
+                        <span id="conf-val">50%</span>
+                    </div>
+                    <input type="range" id="conf-threshold" min="20" max="85" value="50" class="slider">
+                </div>
+
+                <!-- Preset Quick Load Buttons -->
+                <div class="presets-bar">
+                    <small>Quick Test Samples:</small>
+                    <button type="button" class="btn-preset" onclick="loadSample('shoes_clean')">👟 Clean Shoe</button>
+                    <button type="button" class="btn-preset" onclick="loadSample('shoes_damaged')">👞 Damaged Shoe</button>
+                    <button type="button" class="btn-preset" onclick="loadSample('phone_damaged')">📱 Damaged Phone</button>
+                </div>
+
+                <!-- Action Button -->
+                <button type="button" id="btn-submit" class="btn-primary" onclick="processVerification()">
+                    <span id="btn-text">Verify Return Request</span>
+                    <div id="btn-spinner" class="spinner" style="display:none;"></div>
+                </button>
+            </section>
+
+            <!-- Right Panel: Results & Analytics -->
+            <section class="panel results-panel" id="results-panel">
+                <h2>2. Automated Verification Results</h2>
+                
+                <!-- Initial Empty State -->
+                <div id="empty-state" class="empty-state">
+                    <div class="empty-icon">🔍</div>
+                    <p>Upload original reference image and customer returned image, then click <strong>Verify Return Request</strong>.</p>
+                </div>
+
+                <!-- Active Results Container -->
+                <div id="active-results" style="display:none;">
+                    <!-- Top Decision Banner -->
+                    <div class="decision-banner" id="decision-banner">
+                        <div class="status-pill" id="status-pill">APPROVED</div>
+                        <p class="summary-text" id="summary-text">Return verification summary message...</p>
+                    </div>
+
+                    <!-- Metrics Grid -->
+                    <div class="metrics-grid">
+                        <!-- CLIP Similarity Metric Card -->
+                        <div class="metric-card">
+                            <span class="metric-title">CLIP Cosine Similarity Score</span>
+                            <div class="gauge-container">
+                                <div class="gauge-bar-outer">
+                                    <div class="gauge-bar-inner" id="sim-bar" style="width: 0%;"></div>
+                                </div>
+                                <span class="gauge-value" id="sim-val">0.0%</span>
+                            </div>
+                            <small id="sim-match-verdict" class="verdict-label">Match Status: Loading...</small>
+                        </div>
+
+                        <!-- Damage Detection Metric Card -->
+                        <div class="metric-card">
+                            <span class="metric-title">YOLO Damage Detection</span>
+                            <div class="damage-metric-body">
+                                <div class="metric-big-num" id="damage-count-val">0</div>
+                                <div class="metric-sub-label" id="damage-detected-label">No Damage Found</div>
+                            </div>
+                            <small class="verdict-label" id="category-evaluated-label">Model: Shoes Leather</small>
+                        </div>
+                    </div>
+
+                    <!-- Annotated Bounding Box Inspection -->
+                    <div class="inspection-box">
+                        <h3>Annotated Returned Item Inspection</h3>
+                        <div class="image-comparison">
+                            <div class="comp-box">
+                                <span class="comp-title">Reference Product</span>
+                                <img id="res-ref-img" src="" alt="Reference Image">
+                            </div>
+                            <div class="comp-box">
+                                <span class="comp-title">Returned Item (Damage Annotations)</span>
+                                <img id="res-annotated-img" src="" alt="Annotated Image">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Detected Defects Table -->
+                    <div class="defects-table-container">
+                        <h3>Detected Physical Damage & Defects</h3>
+                        <table class="defects-table">
+                            <thead>
+                                <tr>
+                                    <th>Defect Type</th>
+                                    <th>Severity</th>
+                                    <th>Confidence</th>
+                                    <th>Bounding Box [x1, y1, x2, y2]</th>
+                                </tr>
+                            </thead>
+                            <tbody id="defects-table-body">
+                                <tr>
+                                    <td colspan="4" class="text-center">No damage defects detected.</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script src="/static/app.js"></script>
+</body>
+</html>

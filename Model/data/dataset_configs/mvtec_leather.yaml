@@ -1,0 +1,11 @@
+path: C:/CBC2.0/Model/data/mvtec_leather_dataset
+train: images/train
+val: images/val
+nc: 6
+names:
+- cut
+- scratch
+- color_stain
+- glue_mark
+- hole
+- fold

@@ -1,0 +1,10 @@
+path: C:/CBC2.0/Model/data/smartphone_screen_dataset
+train: images/train
+val: images/val
+nc: 5
+names:
+- screen_crack
+- shattered_screen
+- scratch
+- discoloration_bleed
+- dent
